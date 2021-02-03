@@ -1,0 +1,15 @@
+Sequential
+MatrixSize,ExecutionTime
+100,120325
+200,121413
+500,121523
+1000,124325
+2000,124775
+NumThreads4
+Parallel
+MatrixSize,ExecutionTime
+100,47271
+200,50394
+500,50851
+1000,51183
+2000,50362
