@@ -11,47 +11,24 @@ import java.util.concurrent.Executors;
 
 public class MatrixMultiplication {
 
-  private static int PREFERRED_NUM_THREADS = 8;
-  private static final int NUM_THREADS = 8;
-  private static int MATRIX_SIZE = 2000;
-  private static ExecutorService executor;
+  private static int PREFERRED_NUM_THREADS = 8; // optimal number of threads for parallel multiplication
+  private static final int NUM_THREADS = 8; // max number of threads to experiment with for parallel algorithm
+  private static int MATRIX_SIZE = 2000; // default matrix size used to find optimal number of threads
+  private static ExecutorService executor; // global executor used for parallel multiplication experiments
 
   public static void main(String[] args) {
     try {
-//      testExecTimeVSNumThreads();
+      testExecTimeVSNumThreads();
       testSeqAndParallelExecTimeVSMatrixSize();
     } catch (IOException e) {
       System.out.println("errored");
     }
-
-//    double[][] a = {{1, 2, 3}, {4, 5, 2}, {0, 5, 3}};
-//    double[][] b = {{2, 2, 2}, {3, 3, 0}, {1, 4, 5}};
-//    long seqStartTime = System.currentTimeMillis();
-//    double[][] seqNonRecProd = sequentialMultiplyMatrix(a, b);
-//    long seqEndTime = System.currentTimeMillis();
-//
-//    executor = Executors.newFixedThreadPool(numThreads);
-//
-//    long pStartTime = System.currentTimeMillis();
-//    double[][] parallelNonRecProd = parallelMultiplyMatrix(a,b);
-//    long pEndTime = System.currentTimeMillis();
-//
-//    System.out.println("Sequential non recursive , naive O(n^3)");
-//    for(double[] x: seqNonRecProd)
-//      System.out.println(Arrays.toString(x));
-//
-//    System.out.println("\nSequential time is " +
-//        (seqEndTime - seqStartTime) + " milliseconds");
-//
-//    System.out.println("Parallel non recursive , naive O(n^3)");
-//    for(double[] x: parallelNonRecProd)
-//      System.out.println(Arrays.toString(x));
-//
-//    System.out.println("\nParallel time is " +
-//        (pEndTime - pStartTime) + " milliseconds");
   }
 
-  // varying numThreads from 2 to 8 for matrixSize = 2000
+  /**
+   * Times the parallel matrix multiplication of a 2000x2000 matrix with number of threads ranging from 2 to NUM_THREADS.
+   * @throws IOException
+   */
   public static void testExecTimeVSNumThreads() throws IOException {
     double[][] a = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
     double[][] b = generateRandomMatrix(MATRIX_SIZE, MATRIX_SIZE);
@@ -80,7 +57,11 @@ public class MatrixMultiplication {
     csvWriter.close();
   }
 
-  // testing out square matrix sizes 100, 200, 500, 1000, 2000, 4000
+  /**
+   * Times the execution of sequential and parallel matrix multiplication with a range of different matrix sizes.
+   * The parallel multiplication uses the number of threads that yielded minimum execution time with matrix of size 2000x2000.
+   * @throws IOException
+   */
   public static void testSeqAndParallelExecTimeVSMatrixSize() throws IOException {
     int[] matrixSizes = {100, 200, 500, 1000, 2000, 4000};
 
@@ -143,8 +124,8 @@ public class MatrixMultiplication {
   }
 
   /**
-   * Returns the result of a sequential matrix multiplication The two matrices are randomly
-   * generated
+   * Returns the result of a sequential matrix multiplication. The two matrices are randomly
+   * generated.
    *
    * @param a is the first matrix
    * @param b is the second matrix
@@ -166,15 +147,15 @@ public class MatrixMultiplication {
   }
 
   /**
-   * Returns the result of a concurrent matrix multiplication The two matrices are randomly
-   * generated
+   * Returns the result of a concurrent matrix multiplication. The two matrices are randomly
+   * generated.
    *
    * @param a is the first matrix
    * @param b is the second matrix
    * @return the result of the multiplication
    */
   public static double[][] parallelMultiplyMatrix(double[][] a, double[][] b) {
-    int dim = a.length;
+    int dim = a.length; // our program only handles square matrices
     double[][] product = new double[dim][dim];
 
     // row-view of matrix multiplication
@@ -199,7 +180,9 @@ public class MatrixMultiplication {
   }
 
 
-  // each task computes the value of 1 cell in the product
+  /**
+   * Computes the value of 1 cell in the matrix product.
+   */
   private static class MatrixMultiplyTask implements Runnable {
 
     private double[] rowA;
