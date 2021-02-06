@@ -94,7 +94,6 @@ public class MatrixMultiplication {
     csvWriter.append("NumThreads");
     csvWriter.append(String.valueOf(PREFERRED_NUM_THREADS));
     csvWriter.append("\n");
-
     csvWriter.append("Parallel");
     csvWriter.append("\n");
     csvWriter.append("MatrixSize");
@@ -107,7 +106,8 @@ public class MatrixMultiplication {
       double[][] a = generateRandomMatrix(matrixSize, matrixSize);
       double[][] b = generateRandomMatrix(matrixSize, matrixSize);
       System.out.println("Part 1.5");
-      System.out.println("Running " + matrixSize + " by " + matrixSize + " matrix multiplication in parallel with " + PREFERRED_NUM_THREADS + " threads.");
+      System.out.println("Running " + matrixSize + " by " + matrixSize + " matrix multiplication in parallel with " + PREFERRED_NUM_THREADS
+          + " threads.");
       executor = Executors.newFixedThreadPool(PREFERRED_NUM_THREADS);
       long pStartTime = System.currentTimeMillis();
       parallelMultiplyMatrix(a, b);
