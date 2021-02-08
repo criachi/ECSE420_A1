@@ -9,6 +9,7 @@ public class DiningPhilosophers {
 
   public static LinkedList<Integer> queue;
 
+  // add a random duration for thinking and eating states so that the logged output of this program can be digested by the human eye
   public static void main(String[] args) {
 
     int numberOfPhilosophers = 5;
@@ -74,9 +75,7 @@ public class DiningPhilosophers {
               left.unlock();
             }
           }
-        }
-        // Add to queue if not empty
-        else {
+        } else { // Add to queue if not empty; equivalent to thinking state, so maybe we should print out "thinking"?
           synchronized (queue) {
             if (!queue.contains(this.number)) {
               queue.add(this.number);
