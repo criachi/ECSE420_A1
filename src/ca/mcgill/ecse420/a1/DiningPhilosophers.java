@@ -7,84 +7,156 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DiningPhilosophers {
 
-  public static LinkedList<Integer> queue;
+	// add a random duration for thinking and eating states so that the logged
+	// output of this program can be digested by the human eye
+	public static void main(String[] args) {
 
-  // add a random duration for thinking and eating states so that the logged output of this program can be digested by the human eye
-  public static void main(String[] args) {
+		int numberOfPhilosophers = 5;
+		Philosopher[] philosophers = new Philosopher[numberOfPhilosophers];
+		ReentrantLock[] chopsticks = new ReentrantLock[numberOfPhilosophers];
 
-    int numberOfPhilosophers = 5;
-    Philosopher[] philosophers = new Philosopher[numberOfPhilosophers];
-    ReentrantLock[] chopsticks = new ReentrantLock[numberOfPhilosophers];
-    queue = new LinkedList<Integer>();
+		ExecutorService executor = Executors.newCachedThreadPool();
 
-    ExecutorService executor = Executors.newCachedThreadPool();
+		for (int i = 0; i < numberOfPhilosophers; i++) {
+			chopsticks[i] = new ReentrantLock();
+		}
 
-    for (int i = 0; i < numberOfPhilosophers; i++) {
-      chopsticks[i] = new ReentrantLock();
-    }
+		for (int i = 0; i < numberOfPhilosophers; i++) {
+			philosophers[i] = new ProperPhilosopher(i, chopsticks[i], chopsticks[(i + 1) % numberOfPhilosophers]);
+//			philosophers[i] = new DeadlockPhilosopher(i, chopsticks[i], chopsticks[(i + 1) % numberOfPhilosophers]);
 
-    for (int i = 0; i < numberOfPhilosophers; i++) {
-      philosophers[i] = new Philosopher(i, chopsticks[i],
-          chopsticks[(i + 1) % numberOfPhilosophers]);
-      executor.execute(philosophers[i]);
-    }
+			executor.execute(philosophers[i]);
+		}
 
-    executor.shutdown();
-  }
+		executor.shutdown();
+	}
 
-  public static class Philosopher implements Runnable {
+	/**
+	 * 
+	 * Superclass Philosopher
+	 * 
+	 * @author Petar Basta
+	 * 
+	 */
+	public static abstract class Philosopher implements Runnable {
 
-    private int number;
-    private ReentrantLock left;
-    private ReentrantLock right;
+		protected int number;
+		protected ReentrantLock left;
+		protected ReentrantLock right;
 
-    public Philosopher(int number, ReentrantLock left, ReentrantLock right) {
-      this.number = number;
-      this.left = left;
-      this.right = right;
-    }
+		public Philosopher(int number, ReentrantLock left, ReentrantLock right) {
+			this.number = number;
+			this.left = left;
+			this.right = right;
+		}
+	}
 
-    @Override
-    public void run() {
-      boolean isFirst;
+	/**
+	 * 
+	 * Non-deadlock non-starvation case
+	 * 
+	 * @author Petar Basta
+	 * 
+	 */
+	public static class ProperPhilosopher extends Philosopher implements Runnable {
 
-      while (true) {
+		public static LinkedList<Integer> queue = new LinkedList<Integer>();
 
-        isFirst = false;
+		public ProperPhilosopher(int number, ReentrantLock left, ReentrantLock right) {
+			super(number, left, right);
+		}
 
-        synchronized (queue) {
-          if (!queue.isEmpty() && queue.getFirst() == this.number) {
-            isFirst = true;
-          }
-        }
+		@Override
+		public void run() {
+			boolean isFirst;
 
-        if (isFirst) {
-          if (left.tryLock()) {
-            if (right.tryLock()) {
-              //eat
-              System.out.println("Philosopher " + this.number + " ate.");
+			while (true) {
 
-              synchronized (queue) {
-                queue.removeFirst();
-              }
+				isFirst = false;
 
-              left.unlock();
-              right.unlock();
+				synchronized (queue) {
+					if (!queue.isEmpty() && queue.getFirst() == this.number) {
+						isFirst = true;
+					}
+				}
 
-            } else {
-              left.unlock();
-            }
-          }
-        } else { // Add to queue if not empty; equivalent to thinking state, so maybe we should print out "thinking"?
-          synchronized (queue) {
-            if (!queue.contains(this.number)) {
-              queue.add(this.number);
-              System.out.println(DiningPhilosophers.queue);
-              System.out.println("Philosopher " + this.number + " added to queue.");
-            }
-          }
-        }
-      }
-    }
-  }
+				if (isFirst) {
+					if (left.tryLock()) {
+						if (right.tryLock()) {
+
+							// eat
+							synchronized (queue) {
+								queue.removeFirst();
+							}
+
+							System.out.println("Philosopher " + this.number + " is now eating.");
+
+							try {
+								// eat for 0-5 seconds
+								long random = (long) (Math.random() * 4999 + 1);
+								Thread.sleep(random);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+							left.unlock();
+							right.unlock();
+
+							System.out.println("Philosopher " + this.number + " ate and is now thinking.");
+
+							try {
+								// think for 0-5 seconds
+								long random = (long) (Math.random() * 4999 + 1);
+								Thread.sleep(random);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+
+						} else {
+							left.unlock();
+						}
+					}
+				} else { // Add to queue if not empty
+					synchronized (queue) {
+						if (!queue.contains(this.number)) {
+							queue.add(this.number);
+							System.out.println("Philosopher " + this.number + " added to queue.");
+							System.out.println(queue);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * 
+	 * Deadlocked case
+	 * 
+	 * @author Petar Basta
+	 * 
+	 */
+	public static class DeadlockPhilosopher extends Philosopher implements Runnable {
+
+		public DeadlockPhilosopher(int number, ReentrantLock left, ReentrantLock right) {
+			super(number, left, right);
+		}
+
+		@Override
+		public void run() {
+			while (true) {
+				while (!left.tryLock());
+				System.out.println("Philosopher " + this.number + " has left chopstick.");
+				while (!right.tryLock());
+				System.out.println("Philosopher " + this.number + " is now eating.");
+
+				left.unlock();
+				right.unlock();
+
+				System.out.println("Philosopher " + this.number + " ate and is now thinking.");
+			}
+		}
+	}
 }
