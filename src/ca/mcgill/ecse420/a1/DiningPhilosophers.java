@@ -7,27 +7,30 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DiningPhilosophers {
 
-	// add a random duration for thinking and eating states so that the logged
-	// output of this program can be digested by the human eye
 	public static void main(String[] args) {
 
 		int numberOfPhilosophers = 5;
 		Philosopher[] philosophers = new Philosopher[numberOfPhilosophers];
 		ReentrantLock[] chopsticks = new ReentrantLock[numberOfPhilosophers];
 
+		// Create threadpool
 		ExecutorService executor = Executors.newCachedThreadPool();
 
+		// Initialize chopsticks
 		for (int i = 0; i < numberOfPhilosophers; i++) {
 			chopsticks[i] = new ReentrantLock();
 		}
 
+		// Create multiple threads representing philosophers; deadlocked or proper
 		for (int i = 0; i < numberOfPhilosophers; i++) {
 			philosophers[i] = new ProperPhilosopher(i, chopsticks[i], chopsticks[(i + 1) % numberOfPhilosophers]);
-//			philosophers[i] = new DeadlockPhilosopher(i, chopsticks[i], chopsticks[(i + 1) % numberOfPhilosophers]);
+			// philosophers[i] = new DeadlockPhilosopher(i, chopsticks[i], chopsticks[(i +
+			// 1) % numberOfPhilosophers]);
 
 			executor.execute(philosophers[i]);
 		}
 
+		// Teardown
 		executor.shutdown();
 	}
 
@@ -41,13 +44,13 @@ public class DiningPhilosophers {
 	public static abstract class Philosopher implements Runnable {
 
 		protected int number;
-		protected ReentrantLock left;
-		protected ReentrantLock right;
+		protected ReentrantLock leftChopstick;
+		protected ReentrantLock rightChopstick;
 
-		public Philosopher(int number, ReentrantLock left, ReentrantLock right) {
+		public Philosopher(int number, ReentrantLock leftChopstick, ReentrantLock rightChopstick) {
 			this.number = number;
-			this.left = left;
-			this.right = right;
+			this.leftChopstick = leftChopstick;
+			this.rightChopstick = rightChopstick;
 		}
 	}
 
@@ -62,29 +65,36 @@ public class DiningPhilosophers {
 
 		public static LinkedList<Integer> queue = new LinkedList<Integer>();
 
-		public ProperPhilosopher(int number, ReentrantLock left, ReentrantLock right) {
-			super(number, left, right);
+		public ProperPhilosopher(int number, ReentrantLock leftChopstick, ReentrantLock rightChopstick) {
+			super(number, leftChopstick, rightChopstick);
 		}
 
 		@Override
 		public void run() {
 			boolean isFirst;
 
+			// Run forever
 			while (true) {
 
 				isFirst = false;
 
+				// Lock queue
 				synchronized (queue) {
+					// If first in queue, set isFirst to true
 					if (!queue.isEmpty() && queue.getFirst() == this.number) {
 						isFirst = true;
 					}
 				}
 
+				// If first in queue
 				if (isFirst) {
-					if (left.tryLock()) {
-						if (right.tryLock()) {
+					// Try to pick up left chopstick
+					if (leftChopstick.tryLock()) {
+						// Try to pick up right chopstick
+						if (rightChopstick.tryLock()) {
 
-							// eat
+							// Has both chopsticks, ready to eat
+							// Remove from front of queue
 							synchronized (queue) {
 								queue.removeFirst();
 							}
@@ -92,34 +102,38 @@ public class DiningPhilosophers {
 							System.out.println("Philosopher " + this.number + " is now eating.");
 
 							try {
-								// eat for 0-5 seconds
+								// Eat for 0-5 seconds
 								long random = (long) (Math.random() * 4999 + 1);
 								Thread.sleep(random);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 
-							left.unlock();
-							right.unlock();
+							// Put down both chopsticks
+							leftChopstick.unlock();
+							rightChopstick.unlock();
 
 							System.out.println("Philosopher " + this.number + " ate and is now thinking.");
 
 							try {
-								// think for 0-5 seconds
+								// Think for 0-5 seconds
 								long random = (long) (Math.random() * 4999 + 1);
 								Thread.sleep(random);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 
 						} else {
-							left.unlock();
+							// If right chopstick unavailable, return left chopstick
+							leftChopstick.unlock();
 						}
 					}
-				} else { // Add to queue if not empty
+				}
+				// If not first in queue
+				else {
+					// Lock queue
 					synchronized (queue) {
+						// If not in queue, add to back of queue
 						if (!queue.contains(this.number)) {
 							queue.add(this.number);
 							System.out.println("Philosopher " + this.number + " added to queue.");
@@ -140,20 +154,26 @@ public class DiningPhilosophers {
 	 */
 	public static class DeadlockPhilosopher extends Philosopher implements Runnable {
 
-		public DeadlockPhilosopher(int number, ReentrantLock left, ReentrantLock right) {
-			super(number, left, right);
+		public DeadlockPhilosopher(int number, ReentrantLock leftChopstick, ReentrantLock rightChopstick) {
+			super(number, leftChopstick, rightChopstick);
 		}
 
 		@Override
 		public void run() {
+			
+			// Run forever
 			while (true) {
-				while (!left.tryLock());
+				// Wait for left chopstick to become available and pick it up
+				while (!leftChopstick.tryLock());
 				System.out.println("Philosopher " + this.number + " has left chopstick.");
-				while (!right.tryLock());
+				// Wait for right chopstick to become available and pick it up
+				while (!rightChopstick.tryLock());
+				
 				System.out.println("Philosopher " + this.number + " is now eating.");
-
-				left.unlock();
-				right.unlock();
+				
+				// Put both chopsticks down
+				leftChopstick.unlock();
+				rightChopstick.unlock();
 
 				System.out.println("Philosopher " + this.number + " ate and is now thinking.");
 			}
