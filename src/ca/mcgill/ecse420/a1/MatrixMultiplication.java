@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 public class MatrixMultiplication {
 
   private static int PREFERRED_NUM_THREADS = 8; // optimal number of threads for parallel multiplication
-  private static final int NUM_THREADS = 8; // max number of threads to experiment with for parallel algorithm
+  private static final int NUM_THREADS = 15; // max number of threads to experiment with for parallel algorithm
   private static int MATRIX_SIZE = 2000; // default matrix size used to find optimal number of threads
   private static ExecutorService executor; // global executor used for parallel multiplication experiments
 
